@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#150d09">
+<title>Кек Чебурек</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    margin: 0; padding: 0;
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  body {
+    font-family: "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+    background: radial-gradient(circle at 50% 0%, #3a2418 0%, #150d09 70%);
+    color: #f5e6d3;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    touch-action: manipulation;
+  }
+
+  #app {
+    position: relative;
+    width: 100%;
+    max-width: 760px;
+    height: 100vh;
+    height: 100dvh;
+    margin: 0 auto;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  /* ---------- HUD ---------- */
+  .hud {
+    display: flex;
+    gap: 6px;
+  }
+
+  .stat {
+    flex: 1 1 0;
+    min-width: 0;
+    background: rgba(255, 255, 255, .06);
+    border: 1px solid rgba(255, 190, 120, .18);
+    border-radius: 12px;
+    padding: 5px 6px;
+    text-align: center;
+    transition: border-color .2s, background .2s;
+  }
+
+  .stat .label {
+    display: block;
+    font-size: 9px;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+    color: #c8a887;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .stat .value {
+    display: block;
+    font-size: 19px;
+    font-weight: 800;
+    line-height: 1.15;
+    color: #ffcf8a;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .stat.hot {
+    border-color: rgba(255, 200, 90, .85);
+    background: rgba(255, 180, 70, .16);
+    box-shadow: 0 0 16px rgba(255, 180, 70, .28);
+  }
+
+  .stat.hot .value { color: #ffe08a; }
+
+  /* ---------- TIMER ---------- */
+  .timer-wrap {
+    height: 7px;
+    border-radius: 99px;
+    background: rgba(255, 255, 255, .08);
+    overflow: hidden;
+    flex: 0 0 auto;
+  }
+
+  .timer-fill {
+    height: 100%;
+    width: 100%;
+    border-radius: 99px;
+    background: linear-gradient(90deg, #8ad07a, #ffd166);
+    transition: background .3s;
+  }
+
+  .timer-fill.low {
+    background: linear-gradient(90deg, #ff5a4a, #ff9a5a);
+  }
+
+  /* ---------- PLAY AREA ---------- */
+  #playArea {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    border-radius: 18px;
+    border: 1px solid rgba(255, 190, 120, .14);
+    overflow: hidden;
+    touch-action: none;
+    background:
+      radial-gradient(circle at 18% 18%, rgba(255, 180, 90, .09), transparent 45%),
+      radial-gradient(circle at 82% 84%, rgba(255, 120, 60, .07), transparent 45%),
+      rgba(0, 0, 0, .28);
+  }
+
+  /* ---------- CHEBUREK ---------- */
+  .cheburek {
+    position: absolute;
+    border-radius: 50% 50% 12% 12% / 100% 100% 12% 12%;
+    background: radial-gradient(circle at 34% 26%, #ffd79a 0%, #e8a95a 34%, #c07f37 72%, #93591f 100%);
+    box-shadow:
+      inset 0 -7px 12px rgba(90, 45, 10, .45),
+      inset 0 6px 10px rgba(255, 220, 170, .32),
+      0 8px 14px rgba(0, 0, 0, .45);
+    cursor: pointer;
+    transform-origin: center bottom;
+    animation: pop .16s ease-out;
+    will-change: transform, opacity;
+    touch-action: none;
+  }
+
+  .cheburek::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background-image:
+      radial-gradient(circle at 28% 42%, rgba(110, 65, 20, .45) 0 3px, transparent 3.5px),
+      radial-gradient(circle at 52% 62%, rgba(110, 65, 20, .40) 0 2.5px, transparent 3px),
+      radial-gradient(circle at 72% 38%, rgba(110, 65, 20, .45) 0 3px, transparent 3.5px),
+      radial-gradient(circle at 42% 26%, rgba(110, 65, 20, .35) 0 2px, transparent 2.5px),
+      radial-gradient(circle at 66% 68%, rgba(110, 65, 20, .35) 0 2.5px, transparent 3px),
+      radial-gradient(circle at 20% 64%, rgba(110, 65, 20, .30) 0 2px, transparent 2.5px);
+  }
+
+  .cheburek::after {
+    content: "";
+    position: absolute;
+    left: 9%;
+    right: 9%;
+    bottom: 6%;
+    height: 16%;
+    border-radius: 50%;
+    background: rgba(255, 220, 170, .22);
+    pointer-events: none;
+  }
+
+  .cheburek.golden {
+    background: radial-gradient(circle at 34% 26%, #fff6bd 0%, #ffd34d 34%, #e0a800 72%, #a87a00 100%);
+    box-shadow:
+      inset 0 -7px 12px rgba(120, 80, 0, .40),
+      inset 0 6px 10px rgba(255, 255, 220, .55),
+      0 0 24px rgba(255, 210, 80, .65),
+      0 8px 14px rgba(0, 0, 0, .40);
+  }
+
+  .cheburek.burned {
+    background: radial-gradient(circle at 34% 26%, #6b5a4a 0%, #4a3a2c 38%, #2b2018 74%, #17100b 100%);
+    box-shadow:
+      inset 0 -7px 12px rgba(0, 0, 0, .65),
+      0 8px 14px rgba(0, 0, 0, .5);
+  }
+
+  .cheburek.burned::after { background: rgba(160, 130, 100, .10); }
+
+  .cheburek.hit {
+    animation: hitOut .22s ease-out forwards;
+    pointer-events: none;
+  }
+
+  .cheburek.miss {
+    animation: missOut .25s ease-in forwards;
+    pointer-events: none;
+  }
+
+  @keyframes pop {
+    from { transform: scale(.35); opacity: 0; }
+    to   { transform: scale(1);   opacity: 1; }
+  }
+
+  @keyframes hitOut {
+    from { transform: scale(1); opacity: 1; }
+    to   { transform: scale(1.45); opacity: 0; }
+  }
+
+  @keyframes missOut {
+    from { transform: scale(1) rotate(0deg); opacity: 1; }
+    to   { transform: scale(.55) rotate(-10deg); opacity: 0; }
+  }
+
+  /* ---------- FLOATING TEXT ---------- */
+  .float-text {
+    position: absolute;
+    z-index: 5;
+    pointer-events: none;
+    font-weight: 900;
+    font-size: 17px;
+    letter-spacing: .02em;
+    color: #ffd98a;
+    white-space: nowrap;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, .9);
+    transform: translate(-50%, -50%);
+    animation: floatUp .9s ease-out forwards;
+  }
+
+  .float-text.neg  { color: #ff7b6b; font-size: 15px; }
+  .float-text.gold { color: #ffe066; font-size: 21px; }
+
+  @keyframes floatUp {
+    0%   { opacity: 0; transform: translate(-50%, -50%) scale(.6); }
+    18%  { opacity: 1; transform: translate(-50%, -72%) scale(1.12); }
+    100% { opacity: 0; transform: translate(-50%, -165%) scale(1); }
+  }
+
+  /* ---------- OVERLAY ---------- */
+  .overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 22px;
+    text-align: center;
+    border-radius: 18px;
+    background: rgba(12, 8, 6, .90);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    animation: fadeIn .22s ease-out;
+  }
+
+  .overlay.hidden { display: none; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  .ov-title {
+    font-size: clamp(26px, 8.5vw, 46px);
+    font-weight: 900;
+    letter-spacing: .05em;
+    line-height: 1.05;
+    margin-bottom: 10px;
+    background: linear-gradient(180deg, #ffe6a8, #e08f2e);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .ov-sub {
+    margin: 0 0 18px;
+    max-width: 330px;
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: #cbb29a;
+  }
+
+  .ov-score {
+    font-size: clamp(40px, 15vw, 64px);
+    font-weight: 900;
+    line-height: 1;
+    color: #ffcf8a;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .ov-score-label {
+    font-size: 11px;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    color: #9d8267;
+    margin: 4px 0 18px;
+  }
+
+  .ov-stats {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 22px;
+  }
+
+  .ov-stats > div {
+    min-width: 88px;
+    padding: 7px 12px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, .06);
+    border: 1px solid rgba(255, 190, 120, .18);
+  }
+
+  .ov-stats span {
+    display: block;
+    font-size: 9px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: #c8a887;
+    margin-bottom: 3px;
+  }
+
+  .ov-stats b {
+    font-size: 17px;
+    color: #ffcf8a;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .btn {
+    font: inherit;
+    font-size: 17px;
+    font-weight: 900;
+    letter-spacing: .06em;
+    padding: 14px 34px;
+    border: none;
+    border-radius: 14px;
+    cursor: pointer;
+    color: #2b1505;
+    background: linear-gradient(180deg, #ffc46b, #e08f2e);
+    box-shadow: 0 6px 0 #8a5314, 0 10px 22px rgba(0, 0, 0, .5);
+    transition: transform .08s ease, box-shadow .08s ease;
+  }
+
+  .btn:active {
+    transform: translateY(4px);
+    box-shadow: 0 2px 0 #8a5314, 0 6px 14px rgba(0, 0, 0, .5);
+  }
+
+  .hint {
+    margin-top: 16px;
+    font-size: 11px;
+    letter-spacing: .04em;
+    color: #7c6753;
+  }
+
+  @media (max-width: 360px) {
+    .stat .value { font-size: 16px; }
+    .stat .label { font-size: 8px; }
+    .ov-sub { font-size: 12.5px; }
+  }
+
+  @media (min-height: 780px) {
+    .stat .value { font-size: 22px; }
+    .stat .label { font-size: 10px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div class="hud">
+    <div class="stat">
+      <span class="label">Очки</span>
+      <span class="value" id="scoreEl">0</span>
+    </div>
+    <div class="stat" id="comboBox">
+      <span class="label">Комбо</span>
+      <span class="value" id="comboEl">0</span>
+    </div>
+    <div class="stat">
+      <span class="label">Рекорд</span>
+      <span class="value" id="bestEl">0</span>
+    </div>
+  </div>
+
+  <div class="timer-wrap">
+    <div class="timer-fill" id="timeFill"></div>
+  </div>
+
+  <div id="playArea"></div>
+
+  <div class="overlay" id="overlay"></div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* =========================================================
+     КОНСТАНТЫ И СОХРАНЕНИЕ
+     ========================================================= */
+  const SAVE_KEY  = 'kek_cheburek_save_v1';
+  const GAME_TIME = 60000; // длительность раунда, мс
+
+  const playArea   = document.getElementById('playArea');
+  const scoreEl    = document.getElementById('scoreEl');
+  const comboEl    = document.getElementById('comboEl');
+  const comboBox   = document.getElementById('comboBox');
+  const bestEl     = document.getElementById('bestEl');
+  const timeFill   = document.getElementById('timeFill');
+  const overlay    = document.getElementById('overlay');
+
+  function loadSave() {
+    const def = { best: 0, totalKeks: 0, bestCombo: 0, games: 0 };
+    try {
+      const raw = localStorage.getItem(SAVE_KEY);
+      if (!raw) return def;
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== 'object') return def;
+      for (const k in def) {
+        const v = Number(parsed[k]);
+        def[k] = Number.isFinite(v) && v >= 0 ? Math.floor(v) : 0;
+      }
+    } catch (e) { /* сохранение недоступно — играем без него */ }
+    return def;
+  }
+
+  function persist() {
+    try {
+      localStorage.setItem(SAVE_KEY, JSON.stringify(save));
+    } catch (e) { /* игнорируем */ }
+  }
+
+  const save = loadSave();
+
+  /* =========================================================
+     СОСТОЯНИЕ ИГРЫ
+     ========================================================= */
+  let running      = false;
+  let score        = 0;
+  let combo        = 0;
+  let maxCombo     = 0;
+  let popped       = 0;
+  let timeLeft     = GAME_TIME;
+  let elapsedMs    = 0;
+
+  let rafId        = null;
+  let spawnTimeout = null;
+  let lastTs       = 0;
+
+  const activeChebureks = new Set();
+
+  /* =========================================================
+     ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+     ========================================================= */
+  function clamp(v, min, max) { return v < min ? min : (v > max ? max : v); }
+
+  function vibrate(ms) {
+    if (navigator.vibrate) {
+      try { navigator.vibrate(ms); } catch (e) {}
+    }
+  }
+
+  function comboMultiplier() {
+    return 1 + Math.min(Math.floor(combo / 5), 4) * 0.5; // 1 / 1.5 / 2 / 2.5 / 3
+  }
+
+  function updateHud() {
+    scoreEl.textContent = score;
+    comboEl.textContent = combo;
+    bestEl.textContent  = Math.max(save.best, score);
+    comboBox.classList.toggle('hot', combo >= 5);
+  }
+
+  function updateTimer() {
+    const p = clamp(timeLeft / GAME_TIME, 0, 1);
+    timeFill.style.width = (p * 100) + '%';
+    timeFill.classList.toggle('low', p < 0.25);
+  }
+
+  function floatText(x, y, text, cls) {
+    const t = document.createElement('div');
+    t.className = 'float-text' + (cls ? ' ' + cls : '');
+    t.textContent = text;
+    t.style.left = x + 'px';
+    t.style.top  = y + 'px';
+    playArea.appendChild(t);
+    setTimeout(function () { t.remove(); }, 920);
+  }
+
+  /* =========================================================
+     СПАВН ЧЕБУРЕКОВ
+     ========================================================= */
+  function getSpawnInterval() {
+    const t = Math.min(elapsedMs / 1000, 60);
+    return Math.max(300, 950 - t * 11);
+  }
+
+  function getLifetime() {
+    const t = Math.min(elapsedMs / 1000, 60);
+    return Math.max(720, 1500 - t * 13);
+  }
+
+  function getBurnChance() {
+    const t = Math.min(elapsedMs / 1000, 60);
+    return Math.min(0.28, 0.08 + t * 0.0035);
+  }
+
+  function scheduleSpawn(immediate) {
+    if (!running) return;
+    const delay = immediate ? 320 : getSpawnInterval();
+    spawnTimeout = setTimeout(function () {
+      if (!running) return;
+      spawnCheburek();
+      scheduleSpawn(false);
+    }, delay);
+  }
+
+  function spawnCheburek() {
+    const w = playArea.clientWidth;
+    const h = playArea.clientHeight;
+    if (w < 80 || h < 80) return;
+
+    const size = Math.round(clamp(Math.min(w, h * 1.7) * 0.185, 58, 104));
+    const cw = size;
+    const ch = Math.round(size * 0.62);
+
+    // тип
+    const r = Math.random();
+    const burnChance = getBurnChance();
+    let type = 'normal';
+    if (r < 0.07) type = 'golden';
+    else if (r < 0.07 + burnChance) type = 'burned';
+
+    const el = document.createElement('div');
+    el.className = 'cheburek' + (type !== 'normal' ? ' ' + type : '');
+    el.style.width  = cw + 'px';
+    el.style.height = ch + 'px';
+
+    const pad = 6;
+    const x = pad + Math.random() * Math.max(0, w - cw - pad * 2);
+    const y = pad + Math.random() * Math.max(0, h - ch - pad * 2);
+    el.style.left = Math.round(x) + 'px';
+    el.style.top  = Math.round(y) + 'px';
+
+    const life = getLifetime() * (type === 'golden' ? 0.8 : 1);
+
+    const data = {
+      el: el,
+      type: type,
+      dead: false,
+      timer: null,
+      cx: x + cw / 2,
+      cy: y + ch / 2
+    };
+
+    el.addEventListener('pointerdown', function (e) {
+      e.preventDefault();
+      hitCheburek(data);
+    }, { passive: false });
+
+    data.timer = setTimeout(function () { missCheburek(data); }, life);
+
+    activeChebureks.add(data);
+    playArea.appendChild(el);
+  }
+
+  /* =========================================================
+     ПОПАДАНИЕ / ПРОМАХ
+     ========================================================= */
+  function hitCheburek(d) {
+    if (d.dead) return;
+    d.dead = true;
+    clearTimeout(d.timer);
+    activeChebureks.delete(d);
+    d.el.classList.add('hit');
+    setTimeout(function () { d.el.remove(); }, 240);
+
+    if (d.type === 'burned') {
+      combo = 0;
+      timeLeft = Math.max(0, timeLeft - 3000);
+      updateTimer();
+      updateHud();
+      floatText(d.cx, d.cy, 'ГОРЕЛЫЙ  -3 СЕК', 'neg');
+      vibrate(35);
+      if (timeLeft <= 0) { endGame(); }
+      return;
+    }
+
+    combo++;
+    if (combo > maxCombo) maxCombo = combo;
+
+    let pts = Math.round(10 * comboMultiplier());
+    if (d.type === 'golden') pts *= 5;
+
+    score += pts;
+    popped++;
+
+    if (d.type === 'golden') {
+      floatText(d.cx, d.cy, 'ЗОЛОТО +' + pts, 'gold');
+      vibrate(18);
+    } else {
+      floatText(d.cx, d.cy, '+' + pts, '');
+    }
+
+    updateHud();
+  }
+
+  function missCheburek(d) {
+    if (d.dead) return;
+    d.dead = true;
+    activeChebureks.delete(d);
+
+    if (d.type !== 'burned' && combo > 0) {
+      combo = 0;
+      updateHud();
+    }
+
+    d.el.classList.add('miss');
+    setTimeout(function () { d.el.remove(); }, 270);
+  }
+
+  function clearAllChebureks() {
+    activeChebureks.forEach(function (d) {
+      clearTimeout(d.timer);
+      d.dead = true;
+      d.el.remove();
+    });
+    activeChebureks.clear();
+    playArea.querySelectorAll('.cheburek, .float-text').forEach(function (el) {
+      el.remove();
+    });
+  }
+
+  /* =========================================================
+     ИГРОВОЙ ЦИКЛ
+     ========================================================= */
+  function tick(ts) {
+    if (!running) return;
+
+    const dt = ts - lastTs;
+    lastTs = ts;
+    if (dt > 0) {
+      elapsedMs += dt;
+      timeLeft  -= dt;
+    }
+
+    if (timeLeft <= 0) {
+      timeLeft = 0;
+      updateTimer();
+      endGame();
+      return;
+    }
+
+    updateTimer();
+    rafId = requestAnimationFrame(tick);
+  }
+
+  function startGame() {
+    clearAllChebureks();
+    if (rafId) cancelAnimationFrame(rafId);
+    if (spawnTimeout) clearTimeout(spawnTimeout);
+
+    score = 0;
+    combo = 0;
+    maxCombo = 0;
+    popped = 0;
+    elapsedMs = 0;
+    timeLeft = GAME_TIME;
+    running = true;
+
+    overlay.classList.add('hidden');
+    updateHud();
+    updateTimer();
+
+    lastTs = performance.now();
+    rafId = requestAnimationFrame(tick);
+    scheduleSpawn(true);
+  }
+
+  function endGame() {
+    if (!running) return;
+    running = false;
+
+    if (rafId) cancelAnimationFrame(rafId);
+    if (spawnTimeout) clearTimeout(spawnTimeout);
+    clearAllChebureks();
+
+    const isRecord = score > save.best && score > 0;
+
+    save.games     = (save.games || 0) + 1;
+    save.totalKeks = (save.totalKeks || 0) + popped;
+    if (score > save.best)          save.best = score;
+    if (maxCombo > save.bestCombo)  save.bestCombo = maxCombo;
+
+    persist();
+    updateHud();
+    updateTimer();
+    showGameOver(isRecord);
+  }
+
+  /* =========================================================
+     ЭКРАНЫ
+     ========================================================= */
+  function showStart() {
+    overlay.classList.remove('hidden');
+    overlay.innerHTML =
+      '<div class="ov-title">КЕК ЧЕБУРЕК</div>' +
+      '<p class="ov-sub">Тапай по чебурекам и собирай «кек».<br>' +
+      'Горелые не трогай — они отнимают время.<br>' +
+      'Золотые дают в пять раз больше очков.</p>' +
+      '<div class="ov-stats">' +
+        '<div><span>Рекорд</span><b>' + save.best + '</b></div>' +
+        '<div><span>Всего кеков</span><b>' + save.totalKeks + '</b></div>' +
+        '<div><span>Лучшее комбо</span><b>' + save.bestCombo + '</b></div>' +
+      '</div>' +
+      '<button class="btn" id="startBtn" type="button">ИГРАТЬ</button>' +
+      '<div class="hint">60 секунд на раунд</div>';
+
+    document.getElementById('startBtn').addEventListener('click', startGame);
+  }
+
+  function showGameOver(isRecord) {
+    overlay.classList.remove('hidden');
+    overlay.innerHTML =
+      '<div class="ov-title">' + (isRecord ? 'НОВЫЙ РЕКОРД' : 'ВРЕМЯ ВЫШЛО') + '</div>' +
+      '<div class="ov-score">' + score + '</div>' +
+      '<div class="ov-score-label">Очков</div>' +
+      '<div class="ov-stats">' +
+        '<div><span>Кеков за раунд</span><b>' + popped + '</b></div>' +
+        '<div><span>Лучшее комбо</span><b>' + maxCombo + '</b></div>' +
+        '<div><span>Рекорд</span><b>' + save.best + '</b></div>' +
+      '</div>' +
+      '<button class="btn" id="startBtn" type="button">ЕЩЁ РАЗ</button>' +
+      '<div class="hint">Всего кеков за всё время: ' + save.totalKeks + '</div>';
+
+    document.getElementById('startBtn').addEventListener('click', startGame);
+  }
+
+  /* =========================================================
+     ЗАЩИТА ОТ НЕЖЕЛАТЕЛЬНЫХ ЖЕСТОВ
+     ========================================================= */
+  playArea.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+  document.addEventListener('gesturestart', function (e) { e.preventDefault(); });
+  document.addEventListener('dblclick', function (e) { e.preventDefault(); }, { passive: false });
+
+  /* =========================================================
+     СТАРТ
+     ========================================================= */
+  updateHud();
+  updateTimer();
+  showStart();
+})();
+</script>
+</body>
+</html>
